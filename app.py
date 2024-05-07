@@ -1,5 +1,5 @@
 
-from utils import resize_image, obtener_lista_directorio, agrupar_por_slice, celdas, crear_excel
+from utils import  obtener_lista_directorio, agrupar_por_slice, celdas, crear_excel
 from Procesamiento import  procesar
 
 rutas=["imagenes/DAPI 1-1.tif", "imagenes/DCX 1-1.tif", "imagenes/MAP2 1-1.tif", "imagenes/SOX2 1-1.tif"]
