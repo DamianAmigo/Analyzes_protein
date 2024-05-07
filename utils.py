@@ -1,6 +1,7 @@
 import tifffile
 import cv2
 import os 
+import openpyxl
 
 
 
@@ -28,7 +29,6 @@ def resolucion_espacial(ruta_imagen):
         print("No se encontraron metadatos de resolución espacial")
 
 
-
 def resize_image(img, max_width=1500):
     """Redimensiona una imagen proporcionalmente con un ancho máximo dado."""  
 
@@ -50,37 +50,6 @@ def resize_image(img, max_width=1500):
     
     return resized_img
 
-def obtener_rutas_imagenes(directorio):
-    """
-    Recorre de forma recursiva un directorio y sus subdirectorios para obtener
-    las rutas completas de todas las imágenes encontradas.
-
-    Args:
-        directorio (str): Ruta del directorio raíz a analizar.
-
-    Returns:
-        dict: Diccionario donde las claves son nombres de archivo y los valores son rutas completas.
-    """
-    diccionario_rutas = {}
-    
-    # Verificar si el directorio existe
-    if not os.path.isdir(directorio):
-        print(f"Error: El directorio '{directorio}' no existe.")
-        return diccionario_rutas
-    
-    # Recorrer todos los elementos (archivos y directorios) en el directorio
-    for elemento in os.listdir(directorio):
-        ruta_elemento = os.path.join(directorio, elemento)
-        
-        # Si es un archivo y es una imagen válida, agregar al diccionario de rutas
-        if os.path.isfile(ruta_elemento) and es_imagen_valida(elemento):
-            diccionario_rutas[elemento] = ruta_elemento
-        
-        # Si es un directorio, llamar recursivamente a la función para explorar subdirectorios
-        elif os.path.isdir(ruta_elemento):
-            diccionario_rutas.update(obtener_rutas_imagenes(ruta_elemento))
-    
-    return diccionario_rutas
 
 def es_imagen_valida(nombre_archivo):
     """
@@ -95,5 +64,88 @@ def es_imagen_valida(nombre_archivo):
     extensiones_validas = ['.jpg', '.jpeg', '.png', '.tif', '.tiff']
     return os.path.splitext(nombre_archivo)[1].lower() in extensiones_validas
 
+#obtiene un machote de todas las carpetas y archivos
+def obtener_lista_directorio(directorio):
+    """Función para obtener recursivamente una lista de carpetas y archivos en un directorio."""
+    # Obtener la ruta absoluta del directorio especificado
+    ruta_absoluta = os.path.abspath(directorio)
 
+    # Verificar si el directorio es válido
+    if not os.path.isdir(ruta_absoluta):
+        print(f"Error: El directorio '{directorio}' no es válido.")
+        return None
 
+    # Obtener el nombre del directorio base
+    nombre_directorio_base = os.path.basename(ruta_absoluta)
+
+    lista_contenido = []
+
+    # Recorrer el directorio y sus subdirectorios de manera recursiva
+    for ruta_actual, carpetas, archivos in os.walk(ruta_absoluta):
+        # Obtener la ruta relativa del directorio actual con respecto al directorio base
+        ruta_relativa = os.path.relpath(ruta_actual, ruta_absoluta)
+
+        contenido_directorio = {
+            "ruta": ruta_relativa,
+            "carpetas": carpetas,
+            "archivos": archivos
+        }
+        lista_contenido.append(contenido_directorio)
+
+    return lista_contenido
+
+#devuelvo una lista completa con rutas de los archivos CREO QUE NO SE VA A USAR
+def recorrer_arbol(arbol, urls="imagenes/"):
+    
+    lista_ordenada_archivos=[]
+    url=urls     
+    for elemento in arbol:
+        if elemento['ruta']!=".":
+            url = elemento['ruta']
+        
+        
+        if elemento['carpetas'] == []:
+            for subelemento in elemento['archivos']:
+                lista_ordenada_archivos.append(url+"/"+subelemento)
+        else:
+            print(url)
+
+    return lista_ordenada_archivos
+
+#recibe una lista con todos los archivos de una carpeta y nos devuelve una lista con
+#los archivos organizados por slices
+def agrupar_por_slice(lista_archivos):
+    # Creamos un diccionario para agrupar los archivos por número final
+    archivos_por_numero = {}
+
+    for archivo in lista_archivos:
+        # Dividimos el nombre del archivo para extraer la parte relevante (el número)
+        partes = archivo.split()
+        if len(partes) > 1:
+            nombre_archivo = partes[-1]  # Esto asume que el número está al final después del último espacio
+            numero = nombre_archivo.split('.')[0]  # Eliminamos la extensión .tif para obtener el número
+            if numero not in archivos_por_numero:
+                archivos_por_numero[numero] = []
+            archivos_por_numero[numero].append(archivo)
+
+    # Filtramos y devolvemos solo los archivos con el mismo número final
+    archivos_filtrados = [archivos for archivos in archivos_por_numero.values() if len(archivos) > 1]
+
+    return archivos_filtrados
+
+def celdas(columna:str,fila:int ):
+    return columna+str(fila)
+
+def crear_excel(dicc_excel):
+    # Crear un nuevo libro de Excel
+    libro = openpyxl.Workbook()
+
+    # Obtener la hoja activa (por defecto, será la primera hoja del nuevo libro)
+    hoja = libro.active
+    
+    # Iterar sobre las claves y valores del diccionario
+    for celda, valor in dicc_excel.items():
+        hoja[celda] = valor
+
+    nombre_archivo = 'datos.xlsx'
+    libro.save(nombre_archivo)
