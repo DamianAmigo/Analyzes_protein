@@ -3,14 +3,11 @@ import cv2
 import os 
 import openpyxl
 
-
-
 def resolucion_espacial(ruta_imagen):
-
-    # Lee los metadatos de la imagen
+    # Read image metadata
     metadata = tifffile.TiffFile(ruta_imagen).pages[0].tags
 
-    # Obtiene la resolución espacial y las unidades de medida
+    # Get spatial resolution and units of measure
     res_unit = None
     x_res = None
     y_res = None
@@ -22,67 +19,64 @@ def resolucion_espacial(ruta_imagen):
         elif tag.name == 'ResolutionUnit':
             res_unit = tifffile.TIFF.RESUNIT(tag.value)
 
-    # Imprime la resolución espacial
+    # Print spatial resolution
     if x_res is not None and y_res is not None and res_unit is not None:
-        print(f"Cada pixel representa {x_res:.2f}x{y_res:.2f} {res_unit}")
+        print(f"Each pixel represents {x_res:.2f}x{y_res:.2f} {res_unit}")
     else:
-        print("No se encontraron metadatos de resolución espacial")
-
+        print("No spatial resolution metadata found")
 
 def resize_image(img, max_width=1500):
-    """Redimensiona una imagen proporcionalmente con un ancho máximo dado."""  
-
+    """Resize an image proportionally with a given maximum width."""  
     if img is None:
-        print(f"Error: No se pudo cargar la imagen ")
+        print(f"Error: Could not load the image")
         return None
     
-    # Obtener las dimensiones originales de la imagen
+    # Get the original dimensions of the image
     height, width = img.shape[:2]
     
-    # Calcular el factor de escala para ajustar el ancho a max_width
+    # Calculate the scale factor to adjust the width to max_width
     scale_factor = max_width / width
     
-    # Calcular la nueva altura proporcional
+    # Calculate the new proportional height
     new_height = int(height * scale_factor)
     
-    # Redimensionar la imagen con la nueva altura y ancho máximo
+    # Resize the image with the new height and maximum width
     resized_img = cv2.resize(img, (max_width, new_height))
     
     return resized_img
 
-
 def es_imagen_valida(nombre_archivo):
     """
-    Verifica si un nombre de archivo corresponde a una extensión de imagen válida.
+    Check if a file name corresponds to a valid image extension.
 
     Args:
-        nombre_archivo (str): Nombre del archivo.
+        nombre_archivo (str): File name.
 
     Returns:
-        bool: True si la extensión del archivo indica que es una imagen válida, False en caso contrario.
+        bool: True if the file extension indicates it is a valid image, False otherwise.
     """
-    extensiones_validas = ['.jpg', '.jpeg', '.png', '.tif', '.tiff']
-    return os.path.splitext(nombre_archivo)[1].lower() in extensiones_validas
+    valid_extensions = ['.jpg', '.jpeg', '.png', '.tif', '.tiff']
+    return os.path.splitext(nombre_archivo)[1].lower() in valid_extensions
 
-#obtiene un machote de todas las carpetas y archivos
+# Get a template of all folders and files
 def obtener_lista_directorio(directorio):
-    """Función para obtener recursivamente una lista de carpetas y archivos en un directorio."""
-    # Obtener la ruta absoluta del directorio especificado
+    """Function to recursively obtain a list of folders and files in a directory."""
+    # Get the absolute path of the specified directory
     ruta_absoluta = os.path.abspath(directorio)
 
-    # Verificar si el directorio es válido
+    # Check if the directory is valid
     if not os.path.isdir(ruta_absoluta):
-        print(f"Error: El directorio '{directorio}' no es válido.")
+        print(f"Error: The directory '{directorio}' is not valid.")
         return None
 
-    # Obtener el nombre del directorio base
+    # Get the name of the base directory
     nombre_directorio_base = os.path.basename(ruta_absoluta)
 
     lista_contenido = []
 
-    # Recorrer el directorio y sus subdirectorios de manera recursiva
+    # Traverse the directory and its subdirectories recursively
     for ruta_actual, carpetas, archivos in os.walk(ruta_absoluta):
-        # Obtener la ruta relativa del directorio actual con respecto al directorio base
+        # Get the relative path of the current directory with respect to the base directory
         ruta_relativa = os.path.relpath(ruta_actual, ruta_absoluta)
 
         contenido_directorio = {
@@ -94,56 +88,53 @@ def obtener_lista_directorio(directorio):
 
     return lista_contenido
 
-#devuelvo una lista completa con rutas de los archivos CREO QUE NO SE VA A USAR
+# Return a complete list with file paths (I THINK IT WILL NOT BE USED)
 def recorrer_arbol(arbol, urls="imagenes/"):
-    
-    lista_ordenada_archivos=[]
-    url=urls     
+    ordered_file_list = []
+    url = urls     
     for elemento in arbol:
-        if elemento['ruta']!=".":
+        if elemento['ruta'] != ".":
             url = elemento['ruta']
-        
         
         if elemento['carpetas'] == []:
             for subelemento in elemento['archivos']:
-                lista_ordenada_archivos.append(url+"/"+subelemento)
+                ordered_file_list.append(url + "/" + subelemento)
         else:
             print(url)
 
-    return lista_ordenada_archivos
+    return ordered_file_list
 
-#recibe una lista con todos los archivos de una carpeta y nos devuelve una lista con
-#los archivos organizados por slices
+# Receives a list of all files in a folder and returns a list of files organized by slices
 def agrupar_por_slice(lista_archivos):
-    # Creamos un diccionario para agrupar los archivos por número final
+    # Create a dictionary to group files by final number
     archivos_por_numero = {}
 
     for archivo in lista_archivos:
-        # Dividimos el nombre del archivo para extraer la parte relevante (el número)
+        # Split the file name to extract the relevant part (the number)
         partes = archivo.split()
         if len(partes) > 1:
-            nombre_archivo = partes[-1]  # Esto asume que el número está al final después del último espacio
-            numero = nombre_archivo.split('.')[0]  # Eliminamos la extensión .tif para obtener el número
+            nombre_archivo = partes[-1]  # This assumes that the number is at the end after the last space
+            numero = nombre_archivo.split('.')[0]  # Remove the .tif extension to get the number
             if numero not in archivos_por_numero:
                 archivos_por_numero[numero] = []
             archivos_por_numero[numero].append(archivo)
 
-    # Filtramos y devolvemos solo los archivos con el mismo número final
+    # Filter and return only files with the same final number
     archivos_filtrados = [archivos for archivos in archivos_por_numero.values() if len(archivos) > 1]
 
     return archivos_filtrados
 
-def celdas(columna:str,fila:int ):
-    return columna+str(fila)
+def celdas(columna: str, fila: int):
+    return columna + str(fila)
 
 def crear_excel(dicc_excel):
-    # Crear un nuevo libro de Excel
+    # Create a new Excel workbook
     libro = openpyxl.Workbook()
 
-    # Obtener la hoja activa (por defecto, será la primera hoja del nuevo libro)
+    # Get the active sheet (by default, it will be the first sheet of the new workbook)
     hoja = libro.active
     
-    # Iterar sobre las claves y valores del diccionario
+    # Iterate over the keys and values of the dictionary
     for celda, valor in dicc_excel.items():
         hoja[celda] = valor
 
